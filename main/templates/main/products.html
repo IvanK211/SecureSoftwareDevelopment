@@ -1,0 +1,184 @@
+{% extends "main/header.html" %}
+
+{% block content %}
+
+{% load crispy_forms_tags %}
+{% load static %}
+
+<div class="container py-5">
+    <h1 class="font-weight-bold">Products</h1>
+    <hr>
+    <br>
+    <div class="row">
+        {% for p in page_obj %}
+            <div class="col-sm-12 col-md-6 col-lg-4 pb-4">
+                <div class="card h-100" style="border:none">
+                    <img src="{{ p.product_image.url }}" class="card-img-top" alt="{{ p.product_name }}" style="width: auto; height: 200px; object-fit: scale-down;">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ p.product_name }}</h5>
+                        <p class="card-text text-muted" style="font-size:12px">{{ p.product_type }}</p>
+                        <p class="card-text">{{ p.product_description }}</p>
+                        <p class="text-muted" style="font-size:12px">Pricing: {{ p.pricing_average }} | Performance: {{ p.performance_average }} | Durability: {{ p.durability_average }}</p>
+
+
+                        <p style="color: {% if p.is_available %}green{% else %}red{% endif %};">
+                            {% if p.is_available %}
+                                Available
+                            {% else %}
+                                Not Available
+                            {% endif %}
+                        </p>
+
+                        {% if user.is_staff %}
+                            <p>Stock: {{ p.stock }}</p>
+                        {% endif %}
+                        <div class="row">
+                            <div class="col-3 text-center">
+                                {% if user.is_authenticated %}
+                                    <form method="post">
+                                        {% csrf_token %}
+                                        <input type="hidden" value="{{p.pk}}" name="product_pk">
+                                        <button type="submit" class="btn btn-outline-primary" style="font-size:18px; border-radius: 50%">★</button>
+                                    </form>
+                                {% else %}
+                                    <a href="/register" class="btn btn-outline-primary" style="font-size:18px; border-radius: 50%">★</a>
+                                {% endif %}
+                            </div>
+                            <div class="col-4 text-center">
+                                <a class="btn btn-outline-primary" data-toggle="collapse" href="#collapse{{p.pk}}" role="button" aria-expanded="false" aria-controls="collapse{{p.pk}}">Review</a>
+                            </div>
+                            <div class="col-5 text-center">
+                                <button class="btn btn-warning" onclick="buyProduct({{ p.id }})">Buy now</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+
+
+<div class="modal fade" id="orderModal" tabindex="-1" aria-labelledby="orderModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="orderModalLabel">Order Confirmation</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                Item ordered. It maybe will arrive in the next 2 calendar years.
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function buyProduct(productId) {
+        fetch(`/api/products/${productId}/decrease_stock/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json'
+            },
+            credentials: 'same-origin'
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Success:', data);
+            $('#orderModal').modal('show');  //modal
+        })
+        .catch((error) => {
+            console.error('Error:', error);
+        });
+    }
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+</script>
+
+<style>
+    #id_pricing, #id_performance, #id_durability {
+        -webkit-appearance: none;
+        width: 100%;
+        border-radius: 0px;
+        height: 25px;
+        background: #ffff;
+        outline: none;
+        opacity: 1;
+        -webkit-transition: .2s;
+        transition: opacity .2s;
+    }
+
+    #id_pricing::-webkit-slider-thumb, #id_performance::-webkit-slider-thumb, #id_durability::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        border-radius: 0px;
+        appearance: none;
+        width: 25px;
+        height: 25px;
+        background: #007bff;
+        cursor: pointer;
+    }
+
+    #id_pricing::-moz-range-thumb, #id_performance::-moz-range-thumb, #id_durability::-moz-range-thumb {
+        -webkit-appearance: none;
+        border-radius:0px;
+        width: 25px;
+        height: 25px;
+        background: #007bff;
+        cursor: pointer;
+    }
+
+    #id_pricing::-moz-range-track, #id_performance::-moz-range-track, #id_durability::-moz-range-track {
+        -webkit-appearance: none;
+        border-radius:0px;
+        width: 25px;
+        height: 25px;
+        background: #007bff;
+        cursor: pointer;
+    }
+</style>
+
+<!--Pagination-->
+<div class="container">
+    <div class="pagination justify-content-center">
+        <span class="step-links">
+            {% if page_obj.has_previous %}
+                <a href="?page=1">&laquo; first</a>
+                <a href="?page={{ page_obj.previous_page_number }}">previous</a>
+            {% endif %}
+
+            <span class="current">
+                Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+            </span>
+
+            {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}">next</a>
+                <a href="?page={{ page_obj.paginator.num_pages }}">last &raquo;</a>
+            {% endif %}
+        </span>
+    </div>
+</div>
+
+{% endblock %}
+

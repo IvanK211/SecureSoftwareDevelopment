@@ -1,0 +1,72 @@
+{% extends "main/header.html" %}
+
+{% load crispy_forms_tags %}
+
+{% load static %}
+
+{% block content %}
+  <h1>Search Results</h1>
+  {% if products %}
+    <div class="row">
+      {% for product in products %}
+        <div class="col-sm-12 col-md-6 col-lg-4 pb-4">
+          <div class="card h-100" style="border:none">
+            <img src="{{ product.product_image.url }}" class="card-img-top" alt="{{ product.product_name }}" style="width: auto; height: 200px; object-fit: scale-down;">
+            <div class="card-body">
+              <h5 class="card-title">{{ product.product_name }}</h5>
+              <p class="card-text text-muted" style="font-size:12px">{{ product.product_type }}</p>
+              <p class="card-text">{{ product.product_description }}</p>
+              <p class="text-muted" style="font-size:12px">Pricing: {{ product.pricing_average }} | Performance: {{ product.performance_average }} | Durability: {{ product.durability_average }}</p>
+              <div class="row">
+                <div class="col-3 text-center">
+                  {% if user.is_authenticated %}
+                    <form method="post">
+                      {% csrf_token %}
+                      <input type="hidden" value="{{ product.pk }}" name="product_pk">
+                      <button type="submit" class="btn btn-outline-primary" style="font-size:18px; border-radius: 50%">★</button>
+                    </form>
+                  {% else %}
+                    <a href="/register" class="btn btn-outline-primary" style="font-size:18px; border-radius: 50%">★</a>
+                  {% endif %}
+                </div>
+                <div class="col-4 text-center">
+                  <a class="btn btn-outline-primary" data-bs-toggle="collapse" href="#collapse{{ product.pk }}" role="button" aria-expanded="false" aria-controls="collapse{{ product.pk }}">Review</a>
+                </div>
+                <div class="col-5 text-center">
+                  <a href="{{ product.affiliate_url }}" class="btn btn-warning">Buy now</a>
+                </div>
+              </div>
+            </div>
+            <div class="collapse" id="collapse{{ product.pk }}">
+              <div class="card card-body shadow">
+                <h6>Product Score: {{ product.product_name }}</h6>
+                <hr>
+                <form method="post">
+                  {% csrf_token %}
+                  {% for field in vote_form %}
+                    <div class="row">
+                      <div class="col-10" id="slider_{{ field.name }}_{{ product.pk }}" onclick="sliderUpdate('{{ field.name }}', {{ product.pk }})">{{ field|as_crispy_field }}</div>
+                      <div class="col-2 my-auto">
+                        <h6 class="text-center"><span id="score_{{ field.name }}_{{ product.pk }}" class="text-primary">5</span></h6>
+                      </div>
+                    </div>
+                  {% endfor %}
+                  <div class="text-right">
+                    {% if user.is_authenticated %}
+                      <input type="hidden" value="{{ product.pk }}" name="product">
+                      <button type="submit" name="score_submit" class="btn btn-outline-primary">Submit Score</button>
+                    {% else %}
+                      <a href="/register" class="btn btn-outline-primary">Register</a>
+                    {% endif %}
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+          </div>
+  {% endfor %}
+</div>
+{% else %}
+  <p>No products found.</p>
+{% endif %}
+{% endblock %}

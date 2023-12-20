@@ -1,0 +1,109 @@
+{% extends 'main/header.html' %}
+
+{% block content %}
+
+{% load static %}
+
+
+<div class="container py-5">
+  <div class="row">
+    <div class="col-sm-12 col-md-12 col-lg-6 pb-4">
+      <h1 class="display-4 font-weight-bold">New Arrivals!</h1>
+      <h5>Freshly announced hardware only in our store.</h5>
+      {% if user.is_authenticated %}
+          <a class="btn btn-primary mt-2" href="/user">VIEW WISHLIST</a>
+        {% else %}
+          <a class="btn btn-primary mt-2" href="/products">BROWSE</a>
+        {% endif %}
+    </div>
+    <div class="col-sm-12 col-md-12 col-lg-6">
+      <img class="img-fluid rounded" src="{% static 'img/home.png' %}" alt="home">
+    </div>
+  </div>
+</div>
+
+<div class="container py-3">
+  <h2>Products</h2>
+  <hr>
+  <br>
+  <div class="row">
+    {% for p in product %}
+      <div class="col-sm-12 col-md-6 col-lg-3 pb-4">
+        <div class="card h-100" style="border:none">
+          <img src="{{ p.product_image.url }}" class="card-img-top" alt="{{ p.product_name }}" style="width: auto; height: 250px; object-fit: scale-down;">
+          <div class="card-body">
+            <h5 class="card-title">{{ p.product_name }}</h5>
+            <p class="card-text text-muted" style="font-size:12px">{{ p.product_type }}</p>
+            <p class="card-text">{{ p.product_description }}</p>
+            <p class="text-muted" style="font-size:12px">Pricing: {{ p.pricing_average }} | Performance: {{ p.performance_average }} | Durability: {{ p.durability_average }}</p>
+            <div class="row">
+              <div class="col-6 text-right">
+                <button class="btn btn-warning" onclick="buyProduct({{ p.id }})">Buy now</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="container text-right">
+  <a href="/products">View more</a>
+</div>
+
+
+<div class="modal fade" id="orderModal" tabindex="-1" aria-labelledby="orderModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="orderModalLabel">Order Confirmation</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        Item ordered. It maybe will arrive in the next 2 calendar years.
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function buyProduct(productId) {
+    fetch(`/api/products/${productId}/decrease_stock/`, {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': getCookie('csrftoken'),
+        'Content-Type': 'application/json'
+      },
+      credentials: 'same-origin'
+    })
+    .then(response => response.json())
+    .then(data => {
+      console.log('Success:', data);
+      $('#orderModal').modal('show');
+    })
+    .catch((error) => {
+      console.error('Error:', error);
+    });
+  }
+
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+      const cookies = document.cookie.split(';');
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i].trim();
+        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
+</script>
+
+{% endblock %}
